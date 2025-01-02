@@ -1,7 +1,7 @@
 This is the public repository of the decoder software for HADES-R, HADES-ICM, UNNE-1, MARIA-G and GENESIS-M satellites.
 
 The program accepts as parameter a file containing an already descrambled and CRC checked byte sequence received by a FSK modulador compatible with the satellites transmissions.
-Any FSK 1125 Hz tone separation software can be used but this software is intended to work with Andy's UZ7HO Soundmodem software for windows.
+Any FSK 1125 Hz tone separation software can be used but this software is intended to work with Andy's UZ7HO Soundmodem software for Windows.
 
 Some sample packet files are included in the samples folder.
 The binaries for Linux and for Windows (.exe) are already delivered with the source code.
