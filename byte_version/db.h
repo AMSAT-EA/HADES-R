@@ -13,7 +13,7 @@ typedef struct { uint32_t epoch; float xndt2o, xndd6o, bstar, xincl, xnodeo, eo,
 #define SIZE_ZIC 9 ///< Tamaño de la tabla \ref zic
 /**
  * @struct _zic
- * @brief Estructura de zonas de interés comercial
+ * @brief Estructura de zonas de interés
  */
 struct _zic{
   int lat;   ///< Latitud del centro
