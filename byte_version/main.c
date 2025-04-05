@@ -66,7 +66,7 @@ int main(int argc, char * argv[]) {
         printf("*                                                 *\n");
         printf("*       Unified Satellite Telemetry Decoder       *\n");
         printf("*          AMSAT EA - Free distribution           *\n");
-        printf("*              Version 1.10 (Bytes)               *\n");
+        printf("*              Version 1.11 (Bytes)               *\n");
         printf("*            Compilation : %10s            *\n",__DATE__);
         printf("*                                                 *\n");
         printf("***************************************************\n");
