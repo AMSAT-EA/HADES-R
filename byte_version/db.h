@@ -1,6 +1,12 @@
+/**
+ * @file   db.h
+ * @author Celia
+ * @date   2024/04/22
+ * @brief  Funciones y estructuras para la gestión de las bases de datos
+ *
+ */
 #ifndef DB_H
 #define DB_H
-
 #include <stdio.h>
 
 /**
@@ -10,21 +16,5 @@
  */
 typedef struct { uint32_t epoch; float xndt2o, xndd6o, bstar, xincl, xnodeo, eo, omegao, xmo, xno; } tle_t;
 
-#define SIZE_ZIC 9 ///< Tamaño de la tabla \ref zic
-/**
- * @struct _zic
- * @brief Estructura de zonas de interés
- */
-struct _zic{
-  int lat;   ///< Latitud del centro
-  int lon;   ///< Longitud del centro
-  int radio; ///< Radio del área
-  unsigned char flag; ///< Etiqueta (0 = no transmisión; 1 = alta potencia)
-};
-
-//PUBLIC
-extern struct _zic   zic[SIZE_ZIC]; 
-extern int           first;
-extern int           ptx;
 
 #endif /*DB_H*/

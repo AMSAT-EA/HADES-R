@@ -1,2 +1,2 @@
-x86_64-w64-mingw32-gcc -o hades-unified-decoder.exe main.c genesis_scrambler.c genesis_crc.c
+x86_64-w64-mingw32-gcc -Wall -o hades-unified-decoder-windows-x86 *.c -static  -lm
 

@@ -10,7 +10,7 @@
 /*  under a Creative Commons CC BY 4.0 International license                         */
 /* (free distribution, modification and use crediting AMSAT EA as the source).       */
 /*                                                                                   */
-/* AMSAT EA 2024                                                                     */
+/* AMSAT EA 2025                                                                     */
 /* https://www.amsat-ea.org/proyectos/                                               */
 /*                                                                                   */
 /*************************************************************************************/
@@ -66,21 +66,24 @@ int main(int argc, char * argv[]) {
         printf("*                                                 *\n");
         printf("*       Unified Satellite Telemetry Decoder       *\n");
         printf("*          AMSAT EA - Free distribution           *\n");
-        printf("*              Version 1.08 (Bytes)               *\n");
+        printf("*              Version 1.10 (Bytes)               *\n");
         printf("*            Compilation : %10s            *\n",__DATE__);
         printf("*                                                 *\n");
         printf("***************************************************\n");
 
-	printf("\n");
-	printf("This software is able to decodify already unscrambled and CRC checked byte telemetry sequences from:\n");
-	printf("HADES-ICM (2), GENESIS-M (9), MARIA-G (B), UNNE-1 (C) and HADES-R (D)\n");
-	printf("Intended for its use with Andy UZ7HO's Soundmodem Windows demodulator software\n");
+
         printf("\n");
+        printf("This software is able to decodify already unscrambled and CRC checked byte telemetry sequences from:\n");
+        printf("HYDRA-W (1), HADES-ICM (2), GENESIS-M (9), HYDRA-T (A), MARIA-G (B), UNNE-1 (C) and HADES-R (D)\n\n");
+
+        printf("Intended for its use with Andy UZ7HO's Soundmodem Windows demodulator software\n");
+        printf("\n");
+
 
         if (argc != 2) {
 
                 printf("Please specify the file to decodify. File must contain bytes in text separated by spaces\n");
-                printf("Sample: 3D 6F 01 01 00 B6 00 00 00 09 00 03 01 00 04 50 00 02 01 FF FF 00 53 00 0D 00 04 58 D5\n");
+                printf("Sample: 27 FE 52 4F 53 FF FF 40 46 40 4E\n");
                 printf("\n");
 
                 return 1;
@@ -111,11 +114,10 @@ int16_t hex2int(char c) {
 
 uint8_t telemetry_packet_size(uint8_t satellite_id, uint8_t tipo_paquete) {
 
-	uint8_t bytes_utiles[] = { 8, 31, 17, 29, 35, 27, 135, 101, 31, 123, 17, 9, 64, 47, 38, 41 };
+	uint8_t bytes_utiles[] = { 12, 31, 17, 29, 35, 27, 135, 101, 31, 123, 17, 9, 64, 47, 38, 41 };
 
 	/*
 
-	0 - command
 	1 - power
 	2 - temps
 	3 - status
@@ -128,15 +130,19 @@ uint8_t telemetry_packet_size(uint8_t satellite_id, uint8_t tipo_paquete) {
        10 - nebrija
        11 - mariag (fraunhofer)
        12 - efemerides
-       13 - not used
+       13 - uc3m
        14 - time series
        15 - smart ir
 	
 	*/
 
-	if (tipo_paquete > sizeof(bytes_utiles)-1) return 1;
+        if (tipo_paquete > sizeof(bytes_utiles)-1) return 1;
 
-	return bytes_utiles[tipo_paquete]; // utiles
+        // excepcion HADES-ICM que comparte paquete 7 con HYDRA-W
+
+        if (satellite_id == 2 && tipo_paquete == 7) return 101;
+
+        return bytes_utiles[tipo_paquete]; // utiles
 
 }
 
@@ -969,29 +975,117 @@ void visualiza_time_series_packet(uint8_t sat_id, time_series_packet * packet) {
 }
 
 
+void visualiza_payload_data_packet_uc3m(uint8_t sat_id, payload_data_packet * packet) {
+
+    time_t t = time(NULL);
+    struct tm tm;
+    tm = *localtime(&t);
+
+    char fecha[64];
+
+    uint8_t UC3M_PAYLOAD_DATA_SIZE = 32;
+
+    sprintf(fecha, "%d%02d%02d-%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    printf("*** Payload data packet received on local time %s ***\n", fecha);
+
+    uint16_t days_tx = 0, hours_tx = 0, minutes_tx = 0, seconds_tx = 0;
+    uint16_t days_sa = 0, hours_sa = 0, minutes_sa = 0, seconds_sa = 0;
+
+    days_tx      = (packet->clock_tx / 86400); // segundos que dan para dias enteros
+    hours_tx     = (packet->clock_tx % 86400)/3600; // todo lo que no de para un dia dividido entre 3600 seg que son una hora
+    minutes_tx   = (packet->clock_tx % 3600)/60; // todo lo que no de para una hora dividido entre 60
+    seconds_tx   = (packet->clock_tx % 60);
+
+    days_sa      = (packet->clock_sample / 86400); // segundos que dan para dias enteros
+    hours_sa     = (packet->clock_sample % 86400)/3600; // todo lo que no de para un dia dividido entre 3600 seg que son una hora
+    minutes_sa   = (packet->clock_sample % 3600)/60; // todo lo que no de para una hora dividido entre 60
+    seconds_sa   = (packet->clock_sample % 60);
+
+    printf("sat_id           : %d (%s)\n", sat_id, source_desc(sat_id));
+    printf("TX time          : %d seconds (satellite clock was %d days and %02d:%02d:%02d hh:mm:ss)\n",packet->clock_tx, days_tx, hours_tx, minutes_tx, seconds_tx);
+    printf("Sample time      : %d seconds (satellite clock was %d days and %02d:%02d:%02d hh:mm:ss)\n",packet->clock_sample, days_sa, hours_sa, minutes_sa, seconds_sa);
+    printf("Activation time  : %3d seconds\n", packet->activation_time);
+    printf("Min temp         : %3d Celsius\n", packet->min_temp);
+    printf("Max temp         : %3d Celsius\n", packet->max_temp);
+    printf("Measured temp    : %3d Celsius\n", packet->temp_sample);
+
+    for (uint8_t i = 0; i < UC3M_PAYLOAD_DATA_SIZE; i++){
+
+        printf("Data [%03d]       :  %.2X (%03d)\n", i, packet->data[i], packet->data[i]);
+
+    }
+
+    printf("\n");
+
+
+}
+
+
+void visualiza_terapayload_data_packet(uint8_t sat_id, payload_tera_data_packet * packet) {
+
+    time_t t = time(NULL);
+    struct tm tm;
+    tm = *localtime(&t);
+
+    char fecha[64];
+
+    sprintf(fecha, "%d%02d%02d-%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    printf("*** HYDRA-W Tera Payload data packet received on local time %s ***\n", fecha);
+
+    uint16_t days = 0, days_s = 0, hours = 0, hours_s = 0, minutes = 0, minutes_s = 0, seconds = 0, seconds_s = 0;
+
+    days        = (packet->clock_tx / 86400); // segundos que dan para dias enteros
+    hours       = (packet->clock_tx % 86400)/3600; // todo lo que no de para un dia dividido entre 3600 seg que son una hora
+    minutes     = (packet->clock_tx % 3600)/60; // todo lo que no de para una hora dividido entre 60
+    seconds     = (packet->clock_tx % 60);
+
+    days_s      = (packet->clock_sample / 86400); // segundos que dan para dias enteros
+    hours_s     = (packet->clock_sample % 86400)/3600; // todo lo que no de para un dia dividido entre 3600 seg que son una hora
+    minutes_s   = (packet->clock_sample % 3600)/60; // todo lo que no de para una hora dividido entre 60
+    seconds_s   = (packet->clock_sample % 60);
+
+    printf("sat_id           : %d (%s)\n", sat_id, source_desc(sat_id));
+    printf("tx time          : %d seconds (satellite clock was %d days and %02d:%02d:%02d hh:mm:ss)\n",packet->clock_tx, days, hours, minutes, seconds);
+    printf("Experiment start : %d seconds (satellite clock was %d days and %02d:%02d:%02d hh:mm:ss)\n",packet->clock_sample, days_s, hours_s, minutes_s, seconds_s);
+    printf("Temperature      : %+3d degC\n", packet->temp_sample);
+    printf("Frame number     : %03d\n", packet->frame_number);
+
+    for (uint8_t i = 0; i < TERA_PAYLOAD_DATA_SIZE; i++){
+
+       printf("Data [%03d]       : %.2X (%03d)\n", i, packet->data[i], packet->data[i]);
+
+    }
+
+    printf("\n");
+
+}
+
+
 char * source_desc(uint8_t sat_id) {
 
-	static	char * unknown = "Unknown";
-	static	char * sat_desc [] = {
-				"Unknown", 		// 0
-				"Unknown",  	// 1
-				"HADES-ICM", 	// 2
-				"Unknown", 		// 3
-				"Unknown", 		// 4
-				"Unknown", 		// 5
-				"Unknown", 		// 6
-				"Unknown", 		// 7
-				"Unknown", 		// 8
-				"GENESIS-M",	// 9
-				"Unknown", 		// 10
-				"MARIA-G", 		// 11
-				"UNNE-1",  		// 12
-				"HADES-R", 		// 13
-		};
+        static  char * unknown = "Unknown";
+        static  char * sat_desc [] = {
+                                "Unknown",              // 0
+                                "HYDRA-W",      // 1
+                                "HADES-ICM",    // 2
+                                "Unknown",              // 3
+                                "Unknown",              // 4
+                                "Unknown",              // 5
+                                "Unknown",              // 6
+                                "Unknown",              // 7
+                                "Unknown",              // 8
+                                "GENESIS-M",    // 9
+                                "HYDRA-T",              // 10
+                                "MARIA-G",              // 11
+                                "UNNE-1",               // 12
+                                "HADES-R",              // 13
+                };
 
-	if (sat_id > 13) return unknown;
+        if (sat_id > 13) return unknown;
 
-	return (sat_desc[sat_id]);
+        return (sat_desc[sat_id]);
 
 }
 
@@ -1013,8 +1107,10 @@ void procesar(char * file_name) {
    SUNVECTOR sunvector;
    _frm efemeridesp;
    smartir_payload_data_packet smartirpayloadp;
+   payload_data_packet payloadp;
    nebrija_payload_data_packet nebrijapayloadp;
    fraunhofer_payload_data_packet fraunhoferpayloadp;
+   payload_tera_data_packet tera_payloadp;
    payload_icm_data_packet icm_payloadp;
 
    time_series_packet timeseriesp;
@@ -1086,7 +1182,7 @@ void procesar(char * file_name) {
            }
 
 
-           if (num_bytes == 0 && (source != 2 && source != 9 && source != 11 && source != 12 && source != 13)) {
+           if (num_bytes == 0 && (source != 1 && source != 2 && source != 9 && source != 10 && source != 11 && source != 12 && source != 13)) {
 
                 printf("\n\nSatellite is unknown (%d)\n\n", source);
                 fclose(f);
@@ -1095,7 +1191,7 @@ void procesar(char * file_name) {
            }
 
 
-	   if (num_bytes == 0 && (type == 0 || type == 13 || type > 15)) {
+	   if (num_bytes == 0 && (type == 0 || type > 15)) {
 
                 printf("\n\nPacket type is unknown (%d)\n\n", type);
                 fclose(f);
@@ -1167,9 +1263,21 @@ void procesar(char * file_name) {
         break;
 
         case 7:
-                memset(&icm_payloadp, 0, sizeof(icm_payloadp));
-                memcpy((void*)&icm_payloadp + PACKET_HEADER_SIZE, (void*)RX_buffer, telemetry_size);
-                visualiza_icm_data_packet(source, &icm_payloadp);
+
+                if (source == SAT_ID_HADES_ICM) {
+
+	                memset(&icm_payloadp, 0, sizeof(icm_payloadp));
+                        memcpy((void*)&icm_payloadp + PACKET_HEADER_SIZE, (void*)RX_buffer, telemetry_size);
+                        visualiza_icm_data_packet(source, &icm_payloadp);
+
+                } else {
+
+                        memset(&tera_payloadp, 0, sizeof(tera_payloadp));
+                        memcpy((void*)&tera_payloadp + PACKET_HEADER_SIZE, (void*)RX_buffer, telemetry_size);
+                        visualiza_terapayload_data_packet(source, &tera_payloadp);
+
+                }
+
         break;
 
 	case 8: 
@@ -1203,6 +1311,9 @@ void procesar(char * file_name) {
 	break;
 
         case 13:
+                memset(&payloadp, 0, sizeof(payloadp));
+                memcpy((void*)&payloadp + PACKET_HEADER_SIZE, (void*)RX_buffer, telemetry_size);
+                visualiza_payload_data_packet_uc3m(source, &payloadp);
 	break;
 
         case 14:
