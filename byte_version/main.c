@@ -114,17 +114,18 @@ int16_t hex2int(char c) {
 
 uint8_t telemetry_packet_size(uint8_t satellite_id, uint8_t tipo_paquete) {
 
-	uint8_t bytes_utiles[] = { 12, 31, 17, 29, 35, 27, 135, 101, 31, 123, 17, 9, 64, 47, 38, 41 };
+        uint8_t bytes_utiles[] = { 12, 31, 17, 29, 35, 27, 135, 45, 31, 123, 17, 9, 64, 47, 38, 41 };
 
-	/*
+        /*
 
-	1 - power
-	2 - temps
-	3 - status
-	4 - power stats
-	5 - temp stats
-	6 - sunvector
-        7 - icm
+        0 - command
+        1 - power
+        2 - temps
+        3 - status
+        4 - power stats
+        5 - temp stats
+        6 - sunvector
+        7 - tera payload
         8 - antenna deploy
         9 - ine
        10 - nebrija
@@ -133,8 +134,8 @@ uint8_t telemetry_packet_size(uint8_t satellite_id, uint8_t tipo_paquete) {
        13 - uc3m
        14 - time series
        15 - smart ir
-	
-	*/
+
+        */
 
         if (tipo_paquete > sizeof(bytes_utiles)-1) return 1;
 
