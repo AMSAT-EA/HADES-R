@@ -76,24 +76,6 @@ extern uint16_t tm_bw_buf_len;
 
 // structures for the different packet types
 
-// formato de paquete para telecomandos
-
-typedef struct st_command_packet {
-       
-    uint64_t training_1;    			// packet training header 		- 64 bits
-    uint64_t training_2;    			// packet training header 		- 64 bits
-
-    uint16_t sync;         			// packet sync header     		- 8 bits
-    uint8_t  packettype_address;   	// packet type 4 bits, address 	- 4 bits
-    uint8_t  id;    	   			// satellite num address  		- 8 bits
-
-    uint16_t key;          			// command number         		- 16 bits
-    uint16_t value;        			// command value          		- 16 bits
-
-    uint16_t checksum;      		// checksum               		- 16 bits
-
-} __attribute__((packed)) command_packet;
-
 // formato de paquete power
 
 typedef struct st_power_packet {
